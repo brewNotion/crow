@@ -3,7 +3,7 @@ function Folder(id,name){
     this.id = id
     this.name = name;
     this.files = {};
-    // this.subFolders = {};
+    this.subFolders = [];
   }
   
   function File(id,desc,link){
@@ -21,7 +21,7 @@ chrome.runtime.onInstalled.addListener(function() {
             console.log("Storage successfully cleared")
     })
     console.log("Background loaded")
-    chrome.storage.sync.set({'0':(new Folder(0,"root"))},function(){
+    chrome.storage.sync.set({'0':(new Folder('0',"root"))},function(){
         console.log("root folder set")
     })
     chrome.storage.sync.get('folderId', function(data){
