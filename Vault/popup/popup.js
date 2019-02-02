@@ -6,12 +6,18 @@ function Folder(id,name){
     this.subFolders = [];
   }
   
-  function File(id,desc,link){
+  function File(id,desc,link,dateTime){
     this.id = id
     this.description = desc
     this.link = link
+    this.lastReadDate = dateTime
   }
 
+var getFolderJson = function(id, folder){
+    var folderJson = {}
+    folderJson[id] = folder
+    return folderJson
+}
 let bAddFolder = document.getElementById('b-add-folder')
 let folderList = document.getElementById('folder-list')
 
@@ -48,7 +54,6 @@ bAddFolder.onclick = function(element){
     chrome.storage.sync.get('folderId',function(data){
         var fId = (parseInt(data.folderId)+1).toString()
         //for sending a message
-        var folderJson =  {}
         var checkedboxes = document.querySelectorAll("input[type='checkbox']:checked");
         if(checkedboxes.length == 0)
             alert("select a folder/tag")
@@ -60,9 +65,7 @@ bAddFolder.onclick = function(element){
                     console.log('Adding to subfolder')
                     folder = folder[cb.value]
                     folder.subFolders.push(fId)
-                    parentFolder = {}
-                    parentFolder[folder.id.toString()] = folder
-                    chrome.storage.sync.set(parentFolder,function(){
+                    chrome.storage.sync.set(getFolderJson(cb.value, folder),function(){
                         console.log('parent added to subfolder')
                     })
                 })
@@ -70,10 +73,29 @@ bAddFolder.onclick = function(element){
             chrome.storage.sync.set({'folderId':fId}, function(){
                 console.log('folder Id updated to '+fId)
             })
-            folderJson[fId] = (new Folder(fId,folderName))
-            chrome.storage.sync.set(folderJson,function(error){ 
+            chrome.storage.sync.set(getFolderJson(fId, new Folder(fId,folderName)),function(error){ 
                 displayFolders('0', folderList)
             })
         }
     });
+}
+
+document.getElementById('b-add-file').onclick = function(){
+    var checkedboxes = document.querySelectorAll("input[type='checkbox']:checked")
+    if(checkedboxes.length === 0){
+        alert("select a folder")
+    }else{
+        chrome.tabs.query({active:true}, function(tb){
+            tb = tb[0]
+            var file = new File(-1,tb.title, tb.url, Date.now())
+            checkedboxes.forEach(function(cb){
+                chrome.storage.sync.get(cb.value, function(data){
+                    var folder = data[cb.value.toString()]
+                    file.id = Object.keys(folder.files).length
+                    folder.files[file.id] = file
+                    chrome.storage.sync.set(getFolderJson(cb.value, folder))
+                })
+            })
+        })
+    }
 }
